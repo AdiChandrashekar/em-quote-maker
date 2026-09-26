@@ -1,5 +1,6 @@
 // Page wiring: inputs → state → preview, photo upload and drag, share and download.
-import { SAMPLE, SIZES, STYLES } from './presets.js';
+import { SAMPLE, SIZES, SWATCHES } from './presets.js';
+import { BACKDROPS } from './backdrops.js';
 import { dragFocus, exportName, fitWithin } from './layout.js';
 import { renderQuote } from './render.js';
 import { readSettings, writeSettings } from './settings.js';
@@ -19,7 +20,8 @@ const $ = (id) => document.getElementById(id);
 const canvas = $('canvas');
 const ctx = canvas.getContext('2d');
 const el = {
-  quote: $('quote'), name: $('name'), role: $('role'), sizes: $('sizes'), styles: $('styles'),
+  quote: $('quote'), name: $('name'), role: $('role'), sizes: $('sizes'),
+  backdrops: $('backdrops'), swatches: $('swatches'), custom: $('custom-colour'), customChoice: $('custom-choice'),
   photo: $('photo'), removePhoto: $('remove-photo'), status: $('status'), hint: $('drag-hint'),
   share: $('share'), download: $('download'),
 };
@@ -35,13 +37,17 @@ const storage = (() => {
 const saved = readSettings(storage);
 const state = {
   quote: '', name: saved.name, role: saved.role,
-  sizeKey: saved.sizeKey, styleKey: saved.styleKey, plainStyleKey: saved.styleKey,
+  sizeKey: saved.sizeKey,
+  backdropKey: saved.backdropKey, colour: saved.colour,
+  // What to return to when the photo is removed.
+  plainBackdropKey: saved.backdropKey, plainColour: saved.colour,
   photo: null, fx: 0.5, fy: 0.5,
 };
 const assets = { emblem: null };
 const ui = {
   ready: false, fontFail: false, notice: '', noticeTimer: 0, frame: 0,
   readyFile: null, prepTimer: 0, prepToken: 0, drag: null,
+  backdropCache: { key: '', canvas: null },
 };
 
 // ---------- rendering ----------
@@ -67,7 +73,7 @@ function draw() {
   const shown = empty
     ? { ...state, quote: SAMPLE.quote, name: state.name || state.role ? state.name : SAMPLE.name }
     : state;
-  const { fits } = renderQuote(ctx, shown, assets);
+  const { fits } = renderQuote(ctx, shown, assets, ui.backdropCache);
 
   const warnings = [ui.fontFail && MSG.fontFail, ui.notice, !fits && MSG.tooLong].filter(Boolean);
   setStatus(warnings.length ? warnings.join('\n') : empty ? MSG.empty : '', warnings.length > 0);
@@ -160,7 +166,14 @@ async function loadPhoto(file) {
 // ---------- controls ----------
 
 function persist() {
-  writeSettings(storage, { sizeKey: state.sizeKey, styleKey: state.plainStyleKey, name: state.name, role: state.role });
+  const inPhoto = state.backdropKey === 'photo';
+  writeSettings(storage, {
+    sizeKey: state.sizeKey,
+    backdropKey: state.plainBackdropKey,
+    colour: inPhoto ? state.plainColour : state.colour,
+    name: state.name,
+    role: state.role,
+  });
 }
 
 function showNotice(text) {
@@ -173,49 +186,115 @@ function showNotice(text) {
   schedule();
 }
 
-function buildChoices(container, group, table, withDims) {
+function buildSizes(container, table) {
   for (const [key, item] of Object.entries(table)) {
     const label = document.createElement('label');
     label.className = 'choice';
     const input = document.createElement('input');
     input.type = 'radio';
-    input.name = group;
+    input.name = 'size';
     input.value = key;
     input.className = 'visually-hidden';
     const text = document.createElement('span');
     text.className = 'choice__text';
-    if (!withDims) {
-      const swatch = document.createElement('span');
-      swatch.className = 'swatch';
-      swatch.dataset.style = key;
-      text.append(swatch);
-    }
-    text.append(item.label);
-    if (withDims) {
-      const dims = document.createElement('small');
-      dims.textContent = `${item.w} × ${item.h}`;
-      text.append(dims);
-    }
+    const dims = document.createElement('small');
+    dims.textContent = `${item.w} × ${item.h}`;
+    text.append(item.label, dims);
     label.append(input, text);
     container.append(label);
   }
 }
 
+const THUMB = { w: 160, h: 200 };
+
+function buildBackdrops() {
+  for (const [key, b] of Object.entries(BACKDROPS)) {
+    const label = document.createElement('label');
+    label.className = 'backdrop';
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'backdrop';
+    input.value = key;
+    input.className = 'visually-hidden';
+    const tile = document.createElement('span');
+    tile.className = 'backdrop__tile';
+    const thumb = document.createElement('canvas');
+    thumb.width = THUMB.w;
+    thumb.height = THUMB.h;
+    thumb.dataset.backdrop = key;
+    const name = document.createElement('span');
+    name.className = 'backdrop__name';
+    name.textContent = b.label;
+    tile.append(thumb, name);
+    label.append(input, tile);
+    el.backdrops.append(label);
+  }
+}
+
+// Thumbnails show each backdrop in its natural colour: what a tap will give.
+function drawThumbnail(key) {
+  const thumb = el.backdrops.querySelector(`canvas[data-backdrop="${key}"]`);
+  if (!thumb) return;
+  renderQuote(thumb.getContext('2d'), {
+    quote: SAMPLE.quote, name: '', role: '', backdropKey: key, colour: BACKDROPS[key].natural,
+    photo: key === 'photo' ? state.photo : null, fx: 0.5, fy: 0.5,
+  }, assets);
+}
+
+function buildSwatches() {
+  for (const sw of SWATCHES) {
+    const label = document.createElement('label');
+    label.className = 'swatch-choice';
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'colour';
+    input.value = sw.hex;
+    input.className = 'visually-hidden';
+    const dotEl = document.createElement('span');
+    dotEl.className = 'swatch-dot';
+    dotEl.style.background = sw.hex;
+    label.append(input, dotEl, sw.label);
+    el.swatches.insertBefore(label, el.customChoice);
+  }
+}
+
 function syncControls() {
   for (const r of el.sizes.querySelectorAll('input')) r.checked = r.value === state.sizeKey;
-  for (const r of el.styles.querySelectorAll('input')) {
-    r.checked = r.value === state.styleKey;
+  for (const r of el.backdrops.querySelectorAll('input')) {
+    r.checked = r.value === state.backdropKey;
     if (r.value === 'photo') r.disabled = !state.photo;
   }
-  const photoMode = state.styleKey === 'photo' && Boolean(state.photo);
+  const colour = state.colour.toUpperCase();
+  let brand = false;
+  for (const r of el.swatches.querySelectorAll('input[name="colour"]')) {
+    r.checked = r.value.toUpperCase() === colour;
+    brand = brand || r.checked;
+  }
+  el.customChoice.classList.toggle('is-active', !brand);
+  if (el.custom.value.toUpperCase() !== colour) el.custom.value = colour.toLowerCase();
+  const photoMode = state.backdropKey === 'photo' && Boolean(state.photo);
   el.removePhoto.hidden = !state.photo;
   el.hint.hidden = !photoMode;
   canvas.classList.toggle('is-draggable', photoMode);
 }
 
-function setStyle(key) {
-  state.styleKey = key;
-  if (key !== 'photo') state.plainStyleKey = key;
+// Choosing a backdrop jumps to its natural colour; the colour row can change it afterwards.
+function setBackdrop(key) {
+  if (key === 'photo' && state.backdropKey !== 'photo') state.plainColour = state.colour;
+  state.backdropKey = key;
+  state.colour = BACKDROPS[key].natural;
+  if (key !== 'photo') {
+    state.plainBackdropKey = key;
+    state.plainColour = state.colour;
+  }
+  persist();
+  syncControls();
+  schedule();
+}
+
+function setColour(hex) {
+  state.colour = hex.toUpperCase();
+  if (state.backdropKey !== 'photo') state.plainColour = state.colour;
   persist();
   syncControls();
   schedule();
@@ -240,7 +319,11 @@ el.sizes.addEventListener('change', (e) => {
   persist();
   schedule();
 });
-el.styles.addEventListener('change', (e) => setStyle(e.target.value));
+el.backdrops.addEventListener('change', (e) => setBackdrop(e.target.value));
+el.swatches.addEventListener('change', (e) => {
+  if (e.target.name === 'colour') setColour(e.target.value);
+});
+el.custom.addEventListener('input', () => setColour(el.custom.value));
 
 el.photo.addEventListener('change', async () => {
   const file = el.photo.files && el.photo.files[0];
@@ -250,7 +333,8 @@ el.photo.addEventListener('change', async () => {
     state.photo = await loadPhoto(file);
     state.fx = 0.5;
     state.fy = 0.5;
-    setStyle('photo');
+    drawThumbnail('photo');
+    setBackdrop('photo');
   } catch {
     showNotice(MSG.badFile);
   }
@@ -258,7 +342,12 @@ el.photo.addEventListener('change', async () => {
 
 el.removePhoto.addEventListener('click', () => {
   state.photo = null;
-  setStyle(state.plainStyleKey);
+  drawThumbnail('photo');
+  state.backdropKey = state.plainBackdropKey;
+  state.colour = state.plainColour;
+  persist();
+  syncControls();
+  schedule();
 });
 
 el.download.addEventListener('click', async () => {
@@ -294,7 +383,7 @@ el.share.addEventListener('click', async () => {
 
 // Drag on the preview to move the photo.
 canvas.addEventListener('pointerdown', (e) => {
-  if (state.styleKey !== 'photo' || !state.photo) return;
+  if (state.backdropKey !== 'photo' || !state.photo) return;
   ui.drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
   try {
     canvas.setPointerCapture(e.pointerId);
@@ -336,8 +425,9 @@ function loadImage(src) {
   return img.decode().then(() => img);
 }
 
-buildChoices(el.sizes, 'size', SIZES, true);
-buildChoices(el.styles, 'style', STYLES, false);
+buildSizes(el.sizes, SIZES);
+buildBackdrops();
+buildSwatches();
 el.name.value = state.name;
 el.role.value = state.role;
 el.share.hidden = !canShareFiles();
@@ -351,5 +441,6 @@ Promise.all([
   ui.fontFail = fontFail;
   assets.emblem = emblem;
   ui.ready = true;
+  for (const key of Object.keys(BACKDROPS)) drawThumbnail(key);
   schedule();
 });

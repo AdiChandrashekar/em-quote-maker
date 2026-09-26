@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   hasDevanagari, normaliseQuote, wrapLines, fitQuote,
-  LAYOUT, planLayout, coverRect, dragFocus, fitWithin, exportName,
+  LAYOUT, planLayout, coverRect, dragFocus, fitWithin, exportName, quoteZone,
 } from '../js/layout.js';
 import { SIZES } from '../js/presets.js';
 
@@ -187,4 +187,21 @@ test('story size keeps the mark and footer out of the 250px Instagram/WhatsApp o
   assert.ok(p.mark.y >= 250, `mark top ${p.mark.y}`);
   const siteBottom = p.footer.site.y + (LAYOUT.siteSize * p.u * LAYOUT.siteLineHeight) / 2;
   assert.ok(siteBottom <= 1920 - 250, `footer bottom ${siteBottom}`);
+});
+
+test('the web address under the logo is bold and larger', () => {
+  const p = planLayout({ W: 1080, H: 1350, quote: 'x', name: '', role: '' }, measure);
+  assert.match(p.footer.site.font, /^700 /);
+  assert.equal(Number(/([\d.]+)px/.exec(p.footer.site.font)[1]), 34 * p.u);
+});
+
+test('quoteZone covers every quote line and the attribution, and is at least as wide as the divider', () => {
+  const p = planLayout({ W: 1080, H: 1350, quote: SAMPLE_Q, name: 'कृष्ण कुमार', role: 'शिक्षक' }, measure);
+  const z = quoteZone(p);
+  for (const l of p.quote.lines) assert.ok(l.width <= z.w + 1e-6);
+  assert.ok(z.w >= 2 * p.divider.halfWidth - 1e-6);
+  assert.equal(z.y, p.quote.top);
+  assert.ok(z.y + z.h > p.role.y);
+  const short = quoteZone(planLayout({ W: 1080, H: 1350, quote: 'Grow.', name: '', role: '' }, measure));
+  assert.ok(short.w >= 2 * p.divider.halfWidth - 1e-6);
 });

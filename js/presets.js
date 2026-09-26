@@ -8,29 +8,13 @@ export const SIZES = {
   x: { label: 'X / Twitter', w: 1600, h: 900 },
 };
 
-export const STYLES = {
-  navy: {
-    label: 'Navy', bg: '#0A2159', lift: '#12307A',
-    text: '#FFFFFF', mark: '#D71920', rule: '#D71920', dot: '#D71920',
-    name: '#FFFFFF', role: '#AEB6C8', pillBorder: null,
-  },
-  light: {
-    label: 'Light', bg: '#F5F6FA', lift: null,
-    text: '#0A2159', mark: '#D71920', rule: '#D71920', dot: '#D71920',
-    name: '#1B2233', role: '#5A6275', pillBorder: '#E3E6EE',
-  },
-  red: {
-    label: 'Red', bg: '#D71920', lift: null,
-    text: '#FFFFFF', mark: '#0A2159', rule: '#FFFFFF', dot: '#0A2159',
-    name: '#FFFFFF', role: 'rgba(255,255,255,0.85)', pillBorder: null,
-  },
-  photo: {
-    label: 'Photo · फ़ोटो', bg: '#0A2159', lift: null, photo: true,
-    overlayTop: 'rgba(10,33,89,0.55)', overlayBottom: 'rgba(10,33,89,0.88)',
-    text: '#FFFFFF', mark: '#D71920', rule: '#D71920', dot: '#D71920',
-    name: '#FFFFFF', role: '#E9ECF4', pillBorder: null,
-  },
-};
+// Brand colours offered first in the colour row; a custom colour wheel follows them.
+export const SWATCHES = [
+  { key: 'navy', label: 'Navy', hex: '#0A2159' },
+  { key: 'red', label: 'Red', hex: '#D71920' },
+  { key: 'mist', label: 'Mist', hex: '#F5F6FA' },
+  { key: 'white', label: 'White', hex: '#FFFFFF' },
+];
 
 export const BRAND = {
   red: '#D71920',

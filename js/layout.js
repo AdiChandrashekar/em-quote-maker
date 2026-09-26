@@ -119,7 +119,7 @@ export const LAYOUT = {
   emblemGap: 16,
   wordmark: 36,
   siteGap: 12,
-  siteSize: 26,
+  siteSize: 34,
   siteLineHeight: 1.3, // × font size
 };
 
@@ -143,7 +143,7 @@ export function planLayout({ W, H, quote, name = '', role = '' }, measure) {
     pill: { x: pillX, y: footerTop, w: pillW, h: pillH },
     emblem: { x: pillX + L.pillPadL * u, y: footerTop + (pillH - L.emblem * u) / 2, size: L.emblem * u },
     wordmark: { x: pillX + (L.pillPadL + L.emblem + L.emblemGap) * u, y: footerTop + pillH / 2, font: wordmarkFont },
-    site: { x: cx, y: footerTop + pillH + L.siteGap * u + siteH / 2, font: font(400, L.siteSize * u) },
+    site: { x: cx, y: footerTop + pillH + L.siteGap * u + siteH / 2, font: font(700, L.siteSize * u) },
   };
 
   const mark = { x: cx, y: top, font: font(700, L.markSize * u, SERIF_STACK) };
@@ -191,6 +191,26 @@ export function planLayout({ W, H, quote, name = '', role = '' }, measure) {
   }
 
   return { u, W, H, mark, quote: quoteBlock, divider, name: nameLine, role: roleLine, footer };
+}
+
+// Box around the quote, divider and attribution: patterns keep this area calm or clear.
+export function quoteZone(plan) {
+  const widths = plan.quote.lines.map((l) => l.width);
+  if (plan.name) widths.push(plan.name.width);
+  if (plan.role) widths.push(plan.role.width);
+  const widest = Math.max(2 * plan.divider.halfWidth, ...widths);
+  const last = plan.role || plan.name;
+  const bottom = last ? last.y + last.size * 0.7 : plan.divider.y + plan.divider.dotR;
+  return { x: plan.W / 2 - widest / 2, y: plan.quote.top, w: widest, h: bottom - plan.quote.top };
+}
+
+// Other areas decorations must stay out of: the opening quote mark and the footer.
+export function keepRects(plan) {
+  const { u, footer } = plan;
+  return {
+    mark: { x: plan.W / 2 - 80 * u, y: plan.mark.y, w: 160 * u, h: LAYOUT.markBox * u },
+    footer: { x: footer.pill.x, y: footer.pill.y, w: footer.pill.w, h: footer.site.y + 22 * u - footer.pill.y },
+  };
 }
 
 const clamp01 = (v) => Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0.5));

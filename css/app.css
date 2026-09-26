@@ -120,17 +120,47 @@ textarea:focus-visible, input[type="text"]:focus-visible {
   background: var(--white); border: 1.5px solid var(--hairline); border-radius: 10px; cursor: pointer;
 }
 .choice__text small { font-size: 13px; color: var(--text-2); }
-.choices--styles .choice__text { flex-direction: row; align-items: center; gap: 8px; }
 .choice input:checked + .choice__text { background: var(--navy); border-color: var(--navy); color: var(--white); }
 .choice input:checked + .choice__text small { color: var(--muted-on-navy); }
 .choice input:focus-visible + .choice__text { outline: 3px solid var(--focus); outline-offset: 2px; }
 .choice input:disabled + .choice__text { opacity: 0.45; cursor: not-allowed; }
 
-.swatch { width: 18px; height: 18px; flex: none; border-radius: 50%; border: 1.5px solid var(--hairline); }
-.swatch[data-style="navy"] { background: #0A2159; }
-.swatch[data-style="light"] { background: #F5F6FA; }
-.swatch[data-style="red"] { background: #D71920; }
-.swatch[data-style="photo"] { background: linear-gradient(135deg, #AEB6C8, #0A2159); }
+/* Backdrop grid: live thumbnails in each backdrop's natural colour. */
+.backdrops { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+.backdrop { display: block; min-width: 0; cursor: pointer; }
+.backdrop__tile {
+  display: grid; gap: 4px; padding: 4px; background: var(--white);
+  border: 1.5px solid var(--hairline); border-radius: 10px;
+}
+.backdrop__tile canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; border-radius: 6px; background: var(--hairline); }
+.backdrop__name { font-size: 12px; line-height: 1.2; font-weight: 700; text-align: center; color: var(--navy); overflow-wrap: anywhere; }
+.backdrop input:checked + .backdrop__tile { border-color: var(--navy); box-shadow: 0 0 0 2px var(--navy); }
+.backdrop input:focus-visible + .backdrop__tile { outline: 3px solid var(--focus); outline-offset: 2px; }
+.backdrop input:disabled + .backdrop__tile { opacity: 0.4; cursor: not-allowed; }
+
+/* Colour row: brand swatches, then a custom colour wheel. */
+.swatches { display: flex; flex-wrap: wrap; gap: 10px 8px; }
+.swatch-choice {
+  display: grid; justify-items: center; gap: 4px; min-width: 52px; cursor: pointer;
+  font-size: 12px; font-weight: 700; line-height: 1.2; color: var(--navy);
+}
+.swatch-dot { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--hairline); }
+.swatch-choice input:checked + .swatch-dot,
+.swatch-choice--custom.is-active .custom-ring { outline: 3px solid var(--navy); outline-offset: 2px; }
+.swatch-choice input:focus-visible + .swatch-dot,
+.custom-ring:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+.swatch-choice--custom { order: 99; }
+.custom-ring {
+  display: grid; width: 44px; height: 44px; padding: 4px; border-radius: 50%;
+  background: conic-gradient(#e53935, #fdd835, #43a047, #1e88e5, #8e24aa, #e53935);
+}
+.custom-ring input[type="color"] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 100%; padding: 0; margin: 0;
+  border: 2px solid var(--white); border-radius: 50%; background: none; cursor: pointer;
+}
+.custom-ring input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.custom-ring input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 50%; }
+.custom-ring input[type="color"]::-moz-color-swatch { border: 0; border-radius: 50%; }
 
 /* Buttons */
 .button {
