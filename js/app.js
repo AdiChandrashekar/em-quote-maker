@@ -12,6 +12,9 @@ const MSG = {
   badFile: 'यह फ़ाइल खुल नहीं पाई / Could not open this file',
   saveFail: 'इमेज नहीं बन पाई — फिर कोशिश करें / Could not create the image — try again',
   shareAgain: 'फिर से शेयर दबाएँ / Tap Share again',
+  copied: 'इमेज कॉपी हो गई — पेस्ट करें (Ctrl+V / ⌘V) / Image copied — paste it (Ctrl+V / ⌘V)',
+  copyFail: 'कॉपी नहीं हो पाई — इमेज डाउनलोड कर दी गई है, उसे अटैच करें / Could not copy — the image was downloaded instead, attach it',
+  instagram: 'इमेज डाउनलोड हो गई — Instagram में Create (+) दबाकर चुनें / Image downloaded — in Instagram click Create (+) and choose it',
   empty: 'Type a quote to save the image · इमेज सेव करने के लिए कोट लिखें',
 };
 const PHOTO_MAX_EDGE = 2400;
@@ -23,7 +26,18 @@ const el = {
   quote: $('quote'), name: $('name'), role: $('role'), sizes: $('sizes'),
   backdrops: $('backdrops'), swatches: $('swatches'), custom: $('custom-colour'), customChoice: $('custom-choice'),
   photo: $('photo'), removePhoto: $('remove-photo'), status: $('status'), hint: $('drag-hint'),
-  share: $('share'), download: $('download'),
+  share: $('share'), download: $('download'), copy: $('copy-image'), print: $('print'),
+  dests: [...document.querySelectorAll('[data-dest]')], printImage: $('print-image'),
+};
+
+// Laptop shortcuts: the image is copied, then the site's post box opens for pasting.
+// Instagram's website cannot take a pasted image, so it gets a download instead.
+const DESTINATIONS = {
+  whatsapp: { label: 'WhatsApp', url: 'https://web.whatsapp.com/', how: 'paste' },
+  facebook: { label: 'Facebook', url: 'https://www.facebook.com/', how: 'paste' },
+  linkedin: { label: 'LinkedIn', url: 'https://www.linkedin.com/feed/?shareActive=true', how: 'paste' },
+  x: { label: 'X', url: 'https://x.com/compose/post', how: 'paste' },
+  instagram: { label: 'Instagram', url: 'https://www.instagram.com/', how: 'upload' },
 };
 
 const storage = (() => {
@@ -77,8 +91,7 @@ function draw() {
 
   const warnings = [ui.fontFail && MSG.fontFail, ui.notice, !fits && MSG.tooLong].filter(Boolean);
   setStatus(warnings.length ? warnings.join('\n') : empty ? MSG.empty : '', warnings.length > 0);
-  el.download.disabled = empty;
-  el.share.disabled = empty;
+  for (const b of [el.download, el.share, el.copy, el.print, ...el.dests]) b.disabled = empty;
 
   // Prepare the PNG ahead of time so Share can call navigator.share inside the tap (iOS Safari).
   ui.readyFile = null;
@@ -176,13 +189,13 @@ function persist() {
   });
 }
 
-function showNotice(text) {
+function showNotice(text, ms = 6000) {
   ui.notice = text;
   clearTimeout(ui.noticeTimer);
   ui.noticeTimer = setTimeout(() => {
     ui.notice = '';
     schedule();
-  }, 6000);
+  }, ms);
   schedule();
 }
 
@@ -381,6 +394,51 @@ el.share.addEventListener('click', async () => {
   }
 });
 
+// Clipboard write starts inside the click (a pending blob is allowed), so it keeps the user gesture.
+function copyImage() {
+  if (!navigator.clipboard || !navigator.clipboard.write || typeof ClipboardItem === 'undefined') {
+    return Promise.reject(new Error('clipboard unavailable'));
+  }
+  const png = ui.readyFile || canvasFile();
+  return navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
+}
+
+function downloadInstead() {
+  const file = ui.readyFile;
+  return (file ? Promise.resolve(file) : canvasFile()).then(downloadFile);
+}
+
+el.copy.addEventListener('click', () => {
+  copyImage().then(() => showNotice(MSG.copied, 8000), () => downloadInstead().then(() => showNotice(MSG.copyFail, 10000)));
+});
+
+for (const button of el.dests) {
+  button.addEventListener('click', () => {
+    const dest = DESTINATIONS[button.dataset.dest];
+    if (dest.how === 'upload') {
+      downloadInstead().then(() => showNotice(MSG.instagram, 12000), () => showNotice(MSG.saveFail));
+      window.open(dest.url, '_blank', 'noopener');
+      return;
+    }
+    const copied = copyImage();
+    window.open(dest.url, '_blank', 'noopener'); // must open inside the click or it is blocked as a pop-up
+    copied.then(
+      () => showNotice(`${dest.label}: ${MSG.copied}`, 12000),
+      () => downloadInstead().then(() => showNotice(`${dest.label}: ${MSG.copyFail}`, 12000)),
+    );
+  });
+}
+
+el.print.addEventListener('click', () => {
+  const img = el.printImage;
+  img.onload = () => {
+    img.onload = null;
+    window.print();
+  };
+  img.removeAttribute('src');
+  img.src = canvas.toDataURL('image/png');
+});
+
 // Drag on the preview to move the photo.
 canvas.addEventListener('pointerdown', (e) => {
   if (state.backdropKey !== 'photo' || !state.photo) return;
@@ -435,6 +493,7 @@ buildSwatches();
 el.name.value = state.name;
 el.role.value = state.role;
 el.share.hidden = !canShareFiles();
+document.body.classList.toggle('has-native-share', !el.share.hidden);
 syncControls();
 setStatus(MSG.loading, false);
 

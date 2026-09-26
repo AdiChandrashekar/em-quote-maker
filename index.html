@@ -33,6 +33,19 @@
         <button type="button" id="share" class="button button--primary" hidden disabled>Share · शेयर</button>
         <button type="button" id="download" class="button button--secondary" disabled>Download PNG</button>
       </div>
+      <div class="share-more">
+        <p class="share-more__label">Share to · शेयर करें</p>
+        <p class="share-more__hint">Share opens WhatsApp (chat or Status), Instagram (Feed, Story, Direct), Facebook, LinkedIn, Print and every other app on your phone.</p>
+        <div class="share-more__buttons">
+          <button type="button" class="button button--ghost dest" data-dest="whatsapp" disabled>WhatsApp</button>
+          <button type="button" class="button button--ghost dest" data-dest="facebook" disabled>Facebook</button>
+          <button type="button" class="button button--ghost dest" data-dest="instagram" disabled>Instagram</button>
+          <button type="button" class="button button--ghost dest" data-dest="linkedin" disabled>LinkedIn</button>
+          <button type="button" class="button button--ghost dest" data-dest="x" disabled>X</button>
+          <button type="button" class="button button--ghost" id="copy-image" disabled>Copy image</button>
+          <button type="button" class="button button--ghost" id="print" disabled>Print · प्रिंट</button>
+        </div>
+      </div>
     </section>
 
     <form class="controls" autocomplete="off" onsubmit="return false">
@@ -82,5 +95,7 @@
       </div>
     </form>
   </main>
+
+  <div class="print-sheet" aria-hidden="true"><img id="print-image" alt=""></div>
 </body>
 </html>

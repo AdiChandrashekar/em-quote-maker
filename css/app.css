@@ -184,6 +184,28 @@ textarea:focus-visible, input[type="text"]:focus-visible {
 }
 .actions .button { flex: 1 1 0; }
 
+/* More ways to share: site shortcuts on laptops, copy and print everywhere. */
+.share-more { display: grid; gap: 8px; width: 100%; justify-items: center; }
+.share-more__label { margin: 0; font-weight: 700; font-size: 15px; color: var(--navy); }
+.share-more__hint { display: none; margin: 0; font-size: 14px; line-height: 1.45; color: var(--text-2); text-align: center; max-width: 36em; }
+.share-more__buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.share-more__buttons .button { min-height: 44px; padding: 0 16px; font-size: 15px; }
+
+/* Phones with a share sheet: that sheet already reaches every app, so show the hint instead of site shortcuts. */
+@media (max-width: 767px) {
+  .has-native-share .share-more .dest { display: none; }
+  .has-native-share .share-more__hint { display: block; }
+}
+
+.print-sheet { display: none; }
+@media print {
+  @page { margin: 12mm; }
+  body { background: #fff; }
+  body > :not(.print-sheet) { display: none !important; }
+  .print-sheet { display: flex !important; justify-content: center; }
+  .print-sheet img { max-width: 100%; max-height: 95vh; object-fit: contain; }
+}
+
 @media (max-width: 480px) {
   .field-row { grid-template-columns: 1fr; }
 }
