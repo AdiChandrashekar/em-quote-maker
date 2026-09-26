@@ -4,7 +4,6 @@
 export const NAVY = '#0A2159';
 export const RED = '#D71920';
 export const WHITE = '#FFFFFF';
-export const HAIRLINE = '#E3E6EE';
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
@@ -71,6 +70,5 @@ export function derivePalette(baseHex) {
     dot: accent,
     name: text,
     role,
-    pillBorder: contrast(WHITE, base) < 1.3 ? HAIRLINE : null,
   };
 }

@@ -134,7 +134,7 @@ export const BACKDROPS = {
 
   kolam: {
     label: 'Kolam', natural: NATURAL.navy, usesZone: false,
-    draw(c, W, H, { p, u }) {
+    draw(c, W, H, { p, u, keep }) {
       base(c, W, H, p);
       const cluster = (cx, cy, n, s, centre) => {
         c.save();
@@ -153,10 +153,12 @@ export const BACKDROPS = {
         if (centre) dot(c, 0, 0, 8 * u, p.accent);
         c.restore();
       };
+      // Top corners, and just above the footer so the logo and web address stay clear.
+      const lowY = Math.min(keep.logo.y, keep.site.y) - 110 * u;
       cluster(120 * u, 140 * u, 2, 44 * u, true);
-      cluster(W - 120 * u, H - 150 * u, 2, 44 * u, true);
       cluster(W - 110 * u, 120 * u, 1, 40 * u, false);
-      cluster(110 * u, H - 150 * u, 1, 40 * u, false);
+      cluster(W - 110 * u, lowY, 1, 40 * u, true);
+      cluster(110 * u, lowY, 1, 40 * u, false);
     },
   },
 
@@ -473,7 +475,7 @@ export const BACKDROPS = {
     draw(c, W, H, { p, u, zone, keep }) {
       paint(c, W, H, p.base);
       const r = rng(21);
-      const avoid = [zone, keep.mark, keep.footer];
+      const avoid = [zone, keep.mark, keep.logo, keep.site];
       const want = Math.max(8, Math.round(26 * area(W, H)));
       c.lineCap = 'round';
       for (let placed = 0, tries = 0; placed < want && tries < 3000; tries++) {

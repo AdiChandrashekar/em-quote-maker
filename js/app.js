@@ -43,7 +43,7 @@ const state = {
   plainBackdropKey: saved.backdropKey, plainColour: saved.colour,
   photo: null, fx: 0.5, fy: 0.5,
 };
-const assets = { emblem: null };
+const assets = { logo: null };
 const ui = {
   ready: false, fontFail: false, notice: '', noticeTimer: 0, frame: 0,
   readyFile: null, prepTimer: 0, prepToken: 0, drag: null,
@@ -419,10 +419,14 @@ function loadFonts() {
   return Promise.race([Promise.all(jobs), timeout]);
 }
 
+// onload rather than decode(): Chromium defers decode() while the tab is in the background.
 function loadImage(src) {
-  const img = new Image();
-  img.src = src;
-  return img.decode().then(() => img);
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`could not load ${src}`));
+    img.src = src;
+  });
 }
 
 buildSizes(el.sizes, SIZES);
@@ -436,10 +440,10 @@ setStatus(MSG.loading, false);
 
 Promise.all([
   loadFonts().then(() => false, () => true),
-  loadImage('assets/img/emblem.png').catch(() => null),
-]).then(([fontFail, emblem]) => {
+  loadImage('assets/img/logo.png').catch(() => null),
+]).then(([fontFail, logo]) => {
   ui.fontFail = fontFail;
-  assets.emblem = emblem;
+  assets.logo = logo;
   ui.ready = true;
   for (const key of Object.keys(BACKDROPS)) drawThumbnail(key);
   schedule();

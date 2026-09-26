@@ -35,7 +35,7 @@ export function renderQuote(ctx, state, assets, cache = null) {
   drawDivider(ctx, plan.divider, p);
   if (plan.name) drawLine(ctx, plan.name, p.name);
   if (plan.role) drawLine(ctx, plan.role, p.role);
-  drawFooter(ctx, plan.footer, p, assets.emblem, plan.u);
+  drawFooter(ctx, plan.footer, p, assets.logo);
   ctx.restore();
 
   return { fits: plan.quote.fits };
@@ -119,37 +119,11 @@ function drawDivider(ctx, d, p) {
   ctx.fill();
 }
 
-function pillPath(ctx, x, y, w, h) {
-  const r = h / 2;
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.arc(x + w - r, y + r, r, -Math.PI / 2, Math.PI / 2);
-  ctx.lineTo(x + r, y + h);
-  ctx.arc(x + r, y + r, r, Math.PI / 2, Math.PI * 1.5);
-  ctx.closePath();
-}
-
-function drawFooter(ctx, f, p, emblem, u) {
-  const { pill } = f;
-  pillPath(ctx, pill.x, pill.y, pill.w, pill.h);
-  ctx.fillStyle = BRAND.white;
-  ctx.fill();
-  if (p.pillBorder) {
-    ctx.lineWidth = Math.max(2, 2 * u);
-    ctx.strokeStyle = p.pillBorder;
-    ctx.stroke();
-  }
-  if (emblem) ctx.drawImage(emblem, f.emblem.x, f.emblem.y, f.emblem.size, f.emblem.size);
-
-  ctx.font = f.wordmark.font;
-  ctx.fillStyle = BRAND.red;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(BRAND.wordmark, f.wordmark.x, f.wordmark.y);
-
-  ctx.textAlign = 'center';
+function drawFooter(ctx, f, p, logo) {
+  if (logo) ctx.drawImage(logo, f.logo.x, f.logo.y, f.logo.size, f.logo.size);
   ctx.font = f.site.font;
   ctx.fillStyle = p.text;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
   ctx.fillText(BRAND.site, f.site.x, f.site.y);
 }

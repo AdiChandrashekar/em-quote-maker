@@ -118,9 +118,14 @@ for (const [key, s] of Object.entries(SIZES)) {
     assert.ok(q.top >= p.mark.y, 'quote below the mark');
     assert.ok(q.top + q.lines.length * q.lineHeight < p.divider.y, 'divider below the quote');
     assert.ok(p.divider.y < p.name.y && p.name.y < p.role.y, 'name then role below the divider');
-    assert.ok(p.role.y + (p.role.size * LAYOUT.attribLineHeight) / 2 <= p.footer.pill.y, 'role above the footer');
+    assert.ok(p.role.y + (p.role.size * LAYOUT.attribLineHeight) / 2 <= p.footer.logo.y, 'role above the footer');
     assert.ok(p.footer.site.y < s.h, 'site line inside the frame');
-    assert.ok(p.footer.pill.x > 0 && p.footer.pill.x + p.footer.pill.w < s.w, 'pill inside the frame');
+    const { logo, site } = p.footer;
+    assert.ok(logo.x + logo.size <= s.w - LAYOUT.sidePad * s.w + 1e-6 && logo.y + logo.size < s.h, 'logo bottom-right, inside the frame');
+    assert.ok(logo.x > s.w / 2, 'logo on the right half');
+    assert.equal(site.x, LAYOUT.sidePad * s.w, 'web address starts at the left margin');
+    assert.equal(site.y, logo.y + logo.size / 2, 'web address centred on the logo');
+    assert.ok(site.x + LAYOUT.siteSize * p.u * 9.5 < logo.x, 'web address never runs into the logo');
     assert.ok(q.lines.every((l) => l.width <= inner + 1e-6), 'lines inside the side padding');
   });
 }
@@ -145,7 +150,7 @@ test('blank name and role produce no attribution lines', () => {
 test('a paragraph-length quote does not fit the landscape link size but stays above the footer', () => {
   const p = planLayout({ W: 1200, H: 630, quote: 'शिक्षा '.repeat(600), name: '', role: '' }, measure);
   assert.equal(p.quote.fits, false);
-  assert.ok(p.quote.top + p.quote.lines.length * p.quote.lineHeight <= p.footer.pill.y);
+  assert.ok(p.quote.top + p.quote.lines.length * p.quote.lineHeight <= p.footer.logo.y);
 });
 
 test('coverRect crops a portrait photo into a landscape frame', () => {
@@ -185,8 +190,8 @@ test('exportName uses local date, time and size', () => {
 test('story size keeps the mark and footer out of the 250px Instagram/WhatsApp overlay zones', () => {
   const p = planLayout({ W: 1080, H: 1920, quote: SAMPLE_Q, name: 'कृष्ण कुमार', role: 'शिक्षक' }, measure);
   assert.ok(p.mark.y >= 250, `mark top ${p.mark.y}`);
-  const siteBottom = p.footer.site.y + (LAYOUT.siteSize * p.u * LAYOUT.siteLineHeight) / 2;
-  assert.ok(siteBottom <= 1920 - 250, `footer bottom ${siteBottom}`);
+  const bottom = p.footer.logo.y + p.footer.logo.size;
+  assert.ok(bottom <= 1920 - 250, `footer bottom ${bottom}`);
 });
 
 test('the web address under the logo is bold and larger', () => {

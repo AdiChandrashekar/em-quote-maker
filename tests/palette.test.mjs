@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { contrast, derivePalette, isHex, mix, rgba, NAVY, RED, WHITE, HAIRLINE } from '../js/palette.js';
+import { contrast, derivePalette, isHex, mix, rgba, NAVY, RED, WHITE } from '../js/palette.js';
 
 test('contrast matches WCAG reference values', () => {
   assert.equal(Math.round(contrast('#000000', '#FFFFFF') * 100) / 100, 21);
@@ -26,12 +26,10 @@ test('brand colours keep today\'s look', () => {
   const navy = derivePalette(NAVY);
   assert.equal(navy.text, WHITE);
   assert.equal(navy.accent, RED);
-  assert.equal(navy.pillBorder, null);
 
   const mist = derivePalette('#F5F6FA');
   assert.equal(mist.text, NAVY);
   assert.equal(mist.accent, RED);
-  assert.equal(mist.pillBorder, HAIRLINE);
 
   const red = derivePalette(RED);
   assert.equal(red.text, WHITE);
@@ -40,7 +38,6 @@ test('brand colours keep today\'s look', () => {
 
   const white = derivePalette(WHITE);
   assert.equal(white.text, NAVY);
-  assert.equal(white.pillBorder, HAIRLINE);
 });
 
 test('custom colours pick readable text and a visible accent', () => {
