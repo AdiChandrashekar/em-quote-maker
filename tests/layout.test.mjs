@@ -181,3 +181,10 @@ test('fitWithin downscales big phone photos and leaves small ones alone', () => 
 test('exportName uses local date, time and size', () => {
   assert.equal(exportName(new Date(2026, 8, 26, 9, 5), 1080, 1350), 'education-mirror-quote-20260926-0905-1080x1350.png');
 });
+
+test('story size keeps the mark and footer out of the 250px Instagram/WhatsApp overlay zones', () => {
+  const p = planLayout({ W: 1080, H: 1920, quote: SAMPLE_Q, name: 'कृष्ण कुमार', role: 'शिक्षक' }, measure);
+  assert.ok(p.mark.y >= 250, `mark top ${p.mark.y}`);
+  const siteBottom = p.footer.site.y + (LAYOUT.siteSize * p.u * LAYOUT.siteLineHeight) / 2;
+  assert.ok(siteBottom <= 1920 - 250, `footer bottom ${siteBottom}`);
+});

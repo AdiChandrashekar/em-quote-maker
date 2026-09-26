@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quote Maker · Education Mirror</title>
+  <meta name="description" content="Make branded Education Mirror quote images in Hindi and English.">
+  <meta name="theme-color" content="#0A2159">
+  <link rel="icon" href="assets/img/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="assets/img/emblem.png">
+  <link rel="preload" href="assets/fonts/mukta-devanagari-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/mukta-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/app.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="https://educationmirror.org" aria-label="Education Mirror website">
+      <img src="assets/img/emblem.png" alt="" width="36" height="36">
+      <span class="brand__word">Education Mirror</span>
+    </a>
+    <h1 class="masthead__tool">Quote Maker · कोट मेकर</h1>
+  </header>
+
+  <main class="workspace">
+    <section class="preview" aria-label="Preview">
+      <div class="preview__frame">
+        <canvas id="canvas" width="1080" height="1350" role="img" aria-label="Quote image preview"></canvas>
+      </div>
+      <p id="drag-hint" class="hint" hidden>Drag the preview to move the photo · फ़ोटो खिसकाने के लिए खींचें</p>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+      <div class="actions">
+        <button type="button" id="share" class="button button--primary" hidden disabled>Share · शेयर</button>
+        <button type="button" id="download" class="button button--secondary" disabled>Download PNG</button>
+      </div>
+    </section>
+
+    <form class="controls" autocomplete="off" onsubmit="return false">
+      <label class="field">
+        <span class="field__label">Quote · कोट</span>
+        <textarea id="quote" rows="5" placeholder="शिक्षा वह शस्त्र है जिससे आप दुनिया बदल सकते हैं।"></textarea>
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">Name · नाम <em>(optional)</em></span>
+          <input id="name" type="text" placeholder="कृष्ण कुमार">
+        </label>
+        <label class="field">
+          <span class="field__label">Role · पद <em>(optional)</em></span>
+          <input id="role" type="text" placeholder="प्राथमिक शिक्षक, उत्तराखंड">
+        </label>
+      </div>
+
+      <fieldset class="field">
+        <legend class="field__label">Size · साइज़</legend>
+        <div id="sizes" class="choices"></div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend class="field__label">Style · स्टाइल</legend>
+        <div id="styles" class="choices choices--styles"></div>
+      </fieldset>
+
+      <div class="field">
+        <span class="field__label">Photo · फ़ोटो <em>(optional)</em></span>
+        <div class="photo-row">
+          <input id="photo" type="file" accept="image/*" class="visually-hidden">
+          <label for="photo" class="button button--ghost">Choose photo · फ़ोटो चुनें</label>
+          <button type="button" id="remove-photo" class="button button--ghost" hidden>Remove · हटाएँ</button>
+        </div>
+      </div>
+    </form>
+  </main>
+</body>
+</html>

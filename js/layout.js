@@ -94,6 +94,7 @@ export const LAYOUT = {
   topPad: 0.09, // × H, square and portrait sizes
   topPadLandscape: 0.08, // × H
   bottomPad: 0.06, // × H
+  tallSafe: 0.132, // × H: stories get top/bottom padding clear of Instagram/WhatsApp overlays (250px of 1920)
   markSize: 180,
   markBox: 90, // visible height reserved for the “ glyph
   markGap: 24,
@@ -127,14 +128,16 @@ export function planLayout({ W, H, quote, name = '', role = '' }, measure) {
   const u = Math.min(W, H) / 1080;
   const cx = W / 2;
   const innerW = W - 2 * L.sidePad * W;
-  const top = (W > H ? L.topPadLandscape : L.topPad) * H;
+  const tall = H / W >= 1.7;
+  const top = (tall ? L.tallSafe : W > H ? L.topPadLandscape : L.topPad) * H;
+  const bottomPad = (tall ? L.tallSafe : L.bottomPad) * H;
 
   // Footer, built from the bottom edge up.
   const pillH = L.pillH * u;
   const wordmarkFont = font(700, L.wordmark * u, SERIF_STACK);
   const pillW = (L.pillPadL + L.emblem + L.emblemGap + L.pillPadR) * u + measure(BRAND.wordmark, wordmarkFont);
   const siteH = L.siteSize * u * L.siteLineHeight;
-  const footerTop = H - L.bottomPad * H - (pillH + L.siteGap * u + siteH);
+  const footerTop = H - bottomPad - (pillH + L.siteGap * u + siteH);
   const pillX = cx - pillW / 2;
   const footer = {
     pill: { x: pillX, y: footerTop, w: pillW, h: pillH },
