@@ -35,7 +35,7 @@ export function renderQuote(ctx, state, assets, cache = null) {
   drawDivider(ctx, plan.divider, p);
   if (plan.name) drawLine(ctx, plan.name, p.name);
   if (plan.role) drawLine(ctx, plan.role, p.role);
-  drawFooter(ctx, plan.footer, p, assets.logo);
+  drawFooter(ctx, plan.footer, p, assets.logo, plan.u);
   ctx.restore();
 
   return { fits: plan.quote.fits };
@@ -119,8 +119,32 @@ function drawDivider(ctx, d, p) {
   ctx.fill();
 }
 
-function drawFooter(ctx, f, p, logo) {
-  if (logo) ctx.drawImage(logo, f.logo.x, f.logo.y, f.logo.size, f.logo.size);
+function roundRectPath(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// The logo's own corners are rounded at about 5% of its width; the mat follows that curve.
+const LOGO_RADIUS = 0.052;
+
+function drawFooter(ctx, f, p, logo, u) {
+  const { x, y, size, mat } = f.logo;
+  if (logo) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 28 * u;
+    ctx.shadowOffsetY = 8 * u;
+    ctx.fillStyle = BRAND.white;
+    roundRectPath(ctx, x - mat, y - mat, size + 2 * mat, size + 2 * mat, size * LOGO_RADIUS + mat);
+    ctx.fill();
+    ctx.restore();
+    ctx.drawImage(logo, x, y, size, size);
+  }
   ctx.font = f.site.font;
   ctx.fillStyle = p.text;
   ctx.textAlign = 'left';

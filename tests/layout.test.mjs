@@ -118,14 +118,14 @@ for (const [key, s] of Object.entries(SIZES)) {
     assert.ok(q.top >= p.mark.y, 'quote below the mark');
     assert.ok(q.top + q.lines.length * q.lineHeight < p.divider.y, 'divider below the quote');
     assert.ok(p.divider.y < p.name.y && p.name.y < p.role.y, 'name then role below the divider');
-    assert.ok(p.role.y + (p.role.size * LAYOUT.attribLineHeight) / 2 <= p.footer.logo.y, 'role above the footer');
+    assert.ok(p.role.y + (p.role.size * LAYOUT.attribLineHeight) / 2 <= p.footer.logo.y - p.footer.logo.mat, 'role above the footer');
     assert.ok(p.footer.site.y < s.h, 'site line inside the frame');
     const { logo, site } = p.footer;
-    assert.ok(logo.x + logo.size <= s.w - LAYOUT.sidePad * s.w + 1e-6 && logo.y + logo.size < s.h, 'logo bottom-right, inside the frame');
+    assert.ok(logo.x + logo.size + logo.mat <= s.w - LAYOUT.sidePad * s.w + 1e-6 && logo.y + logo.size + logo.mat < s.h, 'logo and its border bottom-right, inside the frame');
     assert.ok(logo.x > s.w / 2, 'logo on the right half');
     assert.equal(site.x, LAYOUT.sidePad * s.w, 'web address starts at the left margin');
     assert.equal(site.y, logo.y + logo.size / 2, 'web address centred on the logo');
-    assert.ok(site.x + LAYOUT.siteSize * p.u * 9.5 < logo.x, 'web address never runs into the logo');
+    assert.ok(site.x + site.w <= logo.x - logo.mat - LAYOUT.siteGap * p.u + 1e-6, 'web address never runs into the logo');
     assert.ok(q.lines.every((l) => l.width <= inner + 1e-6), 'lines inside the side padding');
   });
 }
@@ -190,14 +190,22 @@ test('exportName uses local date, time and size', () => {
 test('story size keeps the mark and footer out of the 250px Instagram/WhatsApp overlay zones', () => {
   const p = planLayout({ W: 1080, H: 1920, quote: SAMPLE_Q, name: 'कृष्ण कुमार', role: 'शिक्षक' }, measure);
   assert.ok(p.mark.y >= 250, `mark top ${p.mark.y}`);
-  const bottom = p.footer.logo.y + p.footer.logo.size;
+  const bottom = p.footer.logo.y + p.footer.logo.size + p.footer.logo.mat;
   assert.ok(bottom <= 1920 - 250, `footer bottom ${bottom}`);
 });
 
 test('the web address under the logo is bold and larger', () => {
   const p = planLayout({ W: 1080, H: 1350, quote: 'x', name: '', role: '' }, measure);
   assert.match(p.footer.site.font, /^700 /);
-  assert.equal(Number(/([\d.]+)px/.exec(p.footer.site.font)[1]), 34 * p.u);
+  assert.equal(Number(/([\d.]+)px/.exec(p.footer.site.font)[1]), 60 * p.u);
+});
+
+test('the web address shrinks rather than running into the logo', () => {
+  const wide = (text, cssFont) => (text === 'educationmirror.org' ? 5000 : measure(text, cssFont));
+  const p = planLayout({ W: 1080, H: 1350, quote: 'x', name: '', role: '' }, wide);
+  const { site, logo } = p.footer;
+  assert.ok(site.size < 60 * p.u);
+  assert.ok(site.x + site.w <= logo.x - logo.mat - LAYOUT.siteGap * p.u + 1e-6);
 });
 
 test('quoteZone covers every quote line and the attribution, and is at least as wide as the divider', () => {

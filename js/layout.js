@@ -1,4 +1,4 @@
-import { SERIF_STACK, font } from './presets.js';
+import { BRAND, SERIF_STACK, font } from './presets.js';
 
 // Pure layout helpers. No DOM access, so they run in Node tests.
 // Text widths come from an injected measure function.
@@ -112,8 +112,10 @@ export const LAYOUT = {
   nameRoleGap: 6,
   attribLineHeight: 1.4, // × font size
   contentGap: 40, // space above the footer
-  logo: 190, // the full Education Mirror logo, bottom right
-  siteSize: 34, // educationmirror.org, bottom left
+  logo: 240, // the full Education Mirror logo, bottom right
+  logoMat: 12, // white border around the logo
+  siteSize: 60, // educationmirror.org, bottom left (shrinks only if it would reach the logo)
+  siteGap: 40, // minimum space between the web address and the logo
   siteLineHeight: 1.3, // × font size
 };
 
@@ -126,13 +128,23 @@ export function planLayout({ W, H, quote, name = '', role = '' }, measure) {
   const top = (tall ? L.tallSafe : W > H ? L.topPadLandscape : L.topPad) * H;
   const bottomPad = (tall ? L.tallSafe : L.bottomPad) * H;
 
-  // Footer: the logo in the bottom-right corner, the web address bottom-left on the logo's centre line.
+  // Footer: the logo on a white mat in the bottom-right corner, the web address bottom-left on its centre line.
   const side = L.sidePad * W;
   const logoSize = L.logo * u;
-  const footerTop = H - bottomPad - logoSize;
+  const mat = L.logoMat * u;
+  const footerH = logoSize + 2 * mat;
+  const footerTop = H - bottomPad - footerH;
+  const logo = { x: W - side - mat - logoSize, y: footerTop + mat, size: logoSize, mat };
+  let siteSize = L.siteSize * u;
+  let siteW = measure(BRAND.site, font(700, siteSize));
+  const room = logo.x - mat - L.siteGap * u - side;
+  if (siteW > room) {
+    siteSize *= room / siteW;
+    siteW = room;
+  }
   const footer = {
-    logo: { x: W - side - logoSize, y: footerTop, size: logoSize },
-    site: { x: side, y: footerTop + logoSize / 2, font: font(700, L.siteSize * u) },
+    logo,
+    site: { x: side, y: footerTop + footerH / 2, font: font(700, siteSize), size: siteSize, w: siteW },
   };
 
   const mark = { x: cx, y: top, font: font(700, L.markSize * u, SERIF_STACK) };
@@ -196,12 +208,12 @@ export function quoteZone(plan) {
 // Other areas decorations must stay out of: the opening quote mark, the logo and the web address.
 export function keepRects(plan) {
   const { u, footer } = plan;
-  const siteH = LAYOUT.siteSize * u * LAYOUT.siteLineHeight;
+  const { logo, site } = footer;
+  const siteH = site.size * LAYOUT.siteLineHeight;
   return {
     mark: { x: plan.W / 2 - 80 * u, y: plan.mark.y, w: 160 * u, h: LAYOUT.markBox * u },
-    logo: { x: footer.logo.x, y: footer.logo.y, w: footer.logo.size, h: footer.logo.size },
-    // Generous width: "educationmirror.org" in bold is about 9.5 × its font size.
-    site: { x: footer.site.x, y: footer.site.y - siteH / 2, w: LAYOUT.siteSize * u * 9.5, h: siteH },
+    logo: { x: logo.x - logo.mat, y: logo.y - logo.mat, w: logo.size + 2 * logo.mat, h: logo.size + 2 * logo.mat },
+    site: { x: site.x, y: site.y - siteH / 2, w: site.w, h: siteH },
   };
 }
 
