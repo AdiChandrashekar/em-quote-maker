@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hasDevanagari, normaliseQuote, wrapLines, fitQuote } from '../js/layout.js';
+import {
+  hasDevanagari, normaliseQuote, wrapLines, fitQuote,
+  LAYOUT, planLayout, coverRect, dragFocus, fitWithin, exportName,
+} from '../js/layout.js';
+import { SIZES } from '../js/presets.js';
 
 const seg = new Intl.Segmenter('hi', { granularity: 'grapheme' });
 const graphemes = (s) => [...seg.segment(s)].length;
@@ -99,4 +103,81 @@ test('fitQuote clips with an ellipsis when nothing fits at minSize', () => {
   assert.equal(fit.lines.length, 4); // floor(60 / (10 × 1.3))
   assert.ok(fit.lines.at(-1).text.endsWith('…'));
   assert.ok(fit.lines.every((l) => l.width <= 100));
+});
+
+// Fake canvas measure: reads the px size out of the CSS font string; half an em per grapheme.
+const measure = (text, cssFont) => graphemes(text) * Number(/([\d.]+)px/.exec(cssFont)[1]) * 0.5;
+const SAMPLE_Q = 'शिक्षा वह शस्त्र है जिससे आप दुनिया बदल सकते हैं।';
+
+for (const [key, s] of Object.entries(SIZES)) {
+  test(`planLayout keeps everything inside the ${key} frame in order`, () => {
+    const p = planLayout({ W: s.w, H: s.h, quote: SAMPLE_Q, name: 'कृष्ण कुमार', role: 'प्राथमिक शिक्षक, उत्तराखंड' }, measure);
+    const q = p.quote;
+    const inner = s.w * (1 - 2 * LAYOUT.sidePad);
+    assert.equal(q.fits, true);
+    assert.ok(q.top >= p.mark.y, 'quote below the mark');
+    assert.ok(q.top + q.lines.length * q.lineHeight < p.divider.y, 'divider below the quote');
+    assert.ok(p.divider.y < p.name.y && p.name.y < p.role.y, 'name then role below the divider');
+    assert.ok(p.role.y + (p.role.size * LAYOUT.attribLineHeight) / 2 <= p.footer.pill.y, 'role above the footer');
+    assert.ok(p.footer.site.y < s.h, 'site line inside the frame');
+    assert.ok(p.footer.pill.x > 0 && p.footer.pill.x + p.footer.pill.w < s.w, 'pill inside the frame');
+    assert.ok(q.lines.every((l) => l.width <= inner + 1e-6), 'lines inside the side padding');
+  });
+}
+
+test('a very long name or role is squeezed to the frame width', () => {
+  const long = 'राजकीय प्राथमिक विद्यालय '.repeat(8);
+  const p = planLayout({ W: 1200, H: 630, quote: 'x', name: long, role: long }, measure);
+  const inner = 1200 * (1 - 2 * LAYOUT.sidePad);
+  assert.ok(p.name.scaleX < 1 && p.name.width <= inner + 1e-6);
+  assert.ok(p.role.scaleX < 1 && p.role.width <= inner + 1e-6);
+});
+
+test('blank name and role produce no attribution lines', () => {
+  const p = planLayout({ W: 1080, H: 1080, quote: 'Grow.', name: '  ', role: '' }, measure);
+  assert.equal(p.name, null);
+  assert.equal(p.role, null);
+  const onlyRole = planLayout({ W: 1080, H: 1080, quote: 'Grow.', name: '', role: 'शिक्षक' }, measure);
+  assert.equal(onlyRole.name, null);
+  assert.equal(onlyRole.role.text, 'शिक्षक');
+});
+
+test('a paragraph-length quote does not fit the landscape link size but stays above the footer', () => {
+  const p = planLayout({ W: 1200, H: 630, quote: 'शिक्षा '.repeat(600), name: '', role: '' }, measure);
+  assert.equal(p.quote.fits, false);
+  assert.ok(p.quote.top + p.quote.lines.length * p.quote.lineHeight <= p.footer.pill.y);
+});
+
+test('coverRect crops a portrait photo into a landscape frame', () => {
+  // 1000×2000 into 1600×900: scale 1.6, crop 1000×562.5.
+  assert.deepEqual(coverRect(1000, 2000, 1600, 900, 0.5, 0.5), { sx: 0, sy: 718.75, sw: 1000, sh: 562.5 });
+  assert.equal(coverRect(1000, 2000, 1600, 900, 0.5, 0).sy, 0);
+  assert.equal(coverRect(1000, 2000, 1600, 900, 0.5, 1).sy, 1437.5);
+});
+
+test('coverRect crops a landscape photo into a story frame and clamps the focal point', () => {
+  // 2000×1000 into 1080×1920: scale 1.92, crop 562.5×1000.
+  assert.deepEqual(coverRect(2000, 1000, 1080, 1920, 0.5, 0.5), { sx: 718.75, sy: 0, sw: 562.5, sh: 1000 });
+  assert.equal(coverRect(2000, 1000, 1080, 1920, 0, 0.5).sx, 0);
+  assert.equal(coverRect(2000, 1000, 1080, 1920, 1, 0.5).sx, 1437.5);
+  assert.equal(coverRect(2000, 1000, 1080, 1920, 7, 0.5).sx, 1437.5);
+});
+
+test('dragFocus moves the focal point opposite to the drag and clamps', () => {
+  // 1000×2000 into 1600×900 → drawn 1600×3200, so 2300px of vertical slack and none horizontal.
+  const moved = dragFocus(0.5, 0.5, 40, 230, 1000, 2000, 1600, 900);
+  assert.equal(moved.fx, 0.5);
+  assert.ok(Math.abs(moved.fy - 0.4) < 1e-9);
+  assert.deepEqual(dragFocus(0.5, 0.5, 0, 99999, 1000, 2000, 1600, 900), { fx: 0.5, fy: 0 });
+  assert.deepEqual(dragFocus(0.5, 0.5, 0, -99999, 1000, 2000, 1600, 900), { fx: 0.5, fy: 1 });
+});
+
+test('fitWithin downscales big phone photos and leaves small ones alone', () => {
+  assert.deepEqual(fitWithin(8000, 6000, 2400), { w: 2400, h: 1800 });
+  assert.deepEqual(fitWithin(3000, 12000, 2400), { w: 600, h: 2400 });
+  assert.deepEqual(fitWithin(1200, 800, 2400), { w: 1200, h: 800 });
+});
+
+test('exportName uses local date, time and size', () => {
+  assert.equal(exportName(new Date(2026, 8, 26, 9, 5), 1080, 1350), 'education-mirror-quote-20260926-0905-1080x1350.png');
 });
