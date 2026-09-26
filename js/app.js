@@ -10,6 +10,7 @@ const MSG = {
   tooLong: 'यह कोट इस साइज़ के लिए बहुत लंबा है — छोटा करें या बड़ा साइज़ चुनें / Quote too long for this size — shorten it or pick a taller size',
   badFile: 'यह फ़ाइल खुल नहीं पाई / Could not open this file',
   saveFail: 'इमेज नहीं बन पाई — फिर कोशिश करें / Could not create the image — try again',
+  shareAgain: 'फिर से शेयर दबाएँ / Tap Share again',
   empty: 'Type a quote to save the image · इमेज सेव करने के लिए कोट लिखें',
 };
 const PHOTO_MAX_EDGE = 2400;
@@ -280,7 +281,14 @@ el.share.addEventListener('click', async () => {
   try {
     await navigator.share({ files: [file] });
   } catch (err) {
-    if (!err || err.name !== 'AbortError') downloadFile(file);
+    const name = err && err.name;
+    if (name === 'AbortError') return;
+    // iOS drops the tap if the PNG had to be made first; the redraw re-prepares it, so a second tap works.
+    if (name === 'NotAllowedError') {
+      showNotice(MSG.shareAgain);
+      return;
+    }
+    downloadFile(file);
   }
 });
 

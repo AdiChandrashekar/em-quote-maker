@@ -64,7 +64,7 @@ All geometry scales with `u = min(W, H) / 1080`. All text is centred horizontall
 
 ### Layout, top to bottom
 
-1. **Top padding** `0.09·H` for portrait and square sizes, `0.08·H` for landscape sizes. **Side padding** `0.08·W`.
+1. **Top padding** `0.09·H` for portrait and square sizes, `0.08·H` for landscape sizes. **Side padding** `0.08·W`. **Story (H/W ≥ 1.7):** top and bottom padding are `0.132·H` (≈253px of 1920) so the quote mark and footer stay clear of the Instagram/WhatsApp top bar and reply box.
 2. **Opening quote mark** “ — Noto Serif 700, `180u`, centred, drawn in the style's *mark* colour.
 3. **Quote block** — Mukta 700, auto-fitted (see below), in the style's *text* colour.
 4. **Divider** — `max(2, 3u)`px line in the style's *rule* colour, width `0.32·W`, with a centre gap holding a dot of radius `8u` in the style's *dot* colour. The gap is 24u on each side of the dot centre. It sits `40u` below the quote block.
